@@ -1,0 +1,104 @@
+load_file("nrngui.hoc")
+load_file("olm-t.hoc")
+load_file("olm-t2.hoc")
+load_file("gap.hoc")
+cvode.active(1)
+
+Vrest = -65
+dt = 1
+celsius=34
+tstop=1000
+
+objref g, b, stim, stim2, cell1, cell2, gap[10]
+
+cell1 = new OLM2()
+cell2 = new OLM()
+
+amp1=0.34
+amp2=0.0
+ggap=0.955
+
+access cell1.soma[0]
+
+b = new VBox()
+b.intercept(1)
+g = new Graph()
+g.size(0,tstop,-70,30)
+g.xaxis(1)
+g.addvar("cell1.soma[0].v(0.5)",1,1,2*tstop,0,2)
+g.addvar("cell2.soma[0].v(0.5)",2,1,2*tstop,0,2)
+g.exec_menu("10% Zoom out")
+xpanel("",1)
+xbutton("run", "run()")
+xvalue("amp. reg.","amp1")
+xvalue("amp. clust.","amp2")
+xvalue("ggap","ggap")
+xpanel()
+b.intercept(0)
+b.map()
+
+	stim=new IClamp(0.5)
+	stim.del=50
+	stim.dur=800
+	stim.amp=0
+
+
+access cell2.soma[0]
+
+	stim2=new IClamp(0.5)
+	stim2.del=50
+	stim2.dur=800
+	stim2.amp=0
+
+for z=0, 9 {
+gap[z] = new Gap()
+}
+
+cell1.dend8[8] gap[0].src(.5)
+cell2.dend8[8] gap[0].target(.5)
+cell1.dend4[1] gap[1].src(.5)
+cell2.dend4[1] gap[1].target(.5)
+cell1.dend3[1] gap[2].src(.5)
+cell2.dend3[1] gap[2].target(.5)
+cell1.dend8[5] gap[3].src(.5)
+cell2.dend8[5] gap[3].target(.5)
+cell1.dend2[4] gap[4].src(.5)
+cell2.dend2[4] gap[4].target(.5)
+cell1.dend4[6] gap[5].src(.5)
+cell2.dend4[6] gap[5].target(.5)
+cell1.dend6[2] gap[6].src(.5)
+cell2.dend6[2] gap[6].target(.5)
+cell1.dend4[5] gap[7].src(.5)
+cell2.dend4[5] gap[7].target(.5)
+cell1.dend1[0] gap[8].src(.5)
+cell2.dend1[0] gap[8].target(.5)
+cell1.dend8[5] gap[9].src(.5)
+cell2.dend8[5] gap[9].target(.5)
+
+proc init() {
+	t=0
+	finitialize(Vrest)
+        fcurrent()
+        forall {
+		v=Vrest
+		e_pas=v+(ina+ik)/g_pas
+	}
+	cvode.re_init()
+	g.begin()
+	g.plot(t)
+}
+
+proc advance() {
+	fadvance()
+	g.plot(t)
+	g.flush()
+	doNotify()
+}
+
+proc run() {
+	stdinit()
+  	stim.amp=amp1
+  	stim2.amp=amp2
+	for z=0, 9 {gap[z].g(ggap)}
+	continuerun(tstop)
+}
